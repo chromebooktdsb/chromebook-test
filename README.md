@@ -1,22 +1,22 @@
-# Chromebook Test Tool
+## Purpose
 
-A kiosk-style diagnostic web app (React, no build step) for testing Chromebook
-keyboard, webcam, mic, and speakers.
+This application was created to assist IT Support staff with Chromebook diagnostics and hardware verification.
 
-## What's in this package
+It provides a centralized interface for testing device components and collecting troubleshooting information before repair or deployment.
 
-```
-index.html
-assets/
-  48dcdab6-...js        (Icons)              — minified
-  fb0529eb-...js         (Keyboard)          — minified
-  6fa9d453-...js         (Test cards)        — minified
-  3d4b4e9c-...js                             — minified
-  64cf4596-...js                             — minified
-  favicon.png                                — regenerated, see note below
-  audio_left.mp3 / audio_right.mp3 / audio_both.mp3
-  fonts/inter-1.woff2 ... inter-7.woff2
-```
+
+## Features
+
+- Hardware diagnostics
+- Device information
+- Display testing
+- Keyboard testing
+- Touchpad testing
+- Audio testing
+- Camera testing
+- Network information
+- Screenshot support
+- File upload support
 
 ## Changes made from the original export
 
