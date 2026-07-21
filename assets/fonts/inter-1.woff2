@@ -1,0 +1,207 @@
+// Chromebook keyboard layout + interactive testing
+// Each key has a `code` matching event.code from KeyboardEvent
+const { useEffect, useRef, useState, useMemo } = React;
+
+const ROWS = [
+  // Function row (top, slim)
+  [
+    { code: "Escape", label: "esc", fn: true },
+    { code: "BrowserBack", icon: "Back", fn: true },
+    { code: "BrowserForward", icon: "Forward", fn: true },
+    { code: "BrowserRefresh", icon: "Reload", fn: true },
+    { code: "Fullscreen", icon: "Full", fn: true },
+    { code: "Overview", icon: "Overview", fn: true },
+    { code: "BrightnessDown", icon: "BrightDown", fn: true },
+    { code: "BrightnessUp", icon: "BrightUp", fn: true },
+    { code: "AudioMute", icon: "Mute", fn: true },
+    { code: "AudioVolumeDown", icon: "VolDown", fn: true },
+    { code: "AudioVolumeUp", icon: "VolUp", fn: true },
+    { code: "Lock", icon: "Lock", fn: true },
+    { code: "Power", icon: "Power", fn: true },
+  ],
+  // Number row
+  [
+    { code: "Backquote", label: "`", sub: "~" },
+    { code: "Digit1", label: "1", sub: "!" },
+    { code: "Digit2", label: "2", sub: "@" },
+    { code: "Digit3", label: "3", sub: "#" },
+    { code: "Digit4", label: "4", sub: "$" },
+    { code: "Digit5", label: "5", sub: "%" },
+    { code: "Digit6", label: "6", sub: "^" },
+    { code: "Digit7", label: "7", sub: "&" },
+    { code: "Digit8", label: "8", sub: "*" },
+    { code: "Digit9", label: "9", sub: "(" },
+    { code: "Digit0", label: "0", sub: ")" },
+    { code: "Minus", label: "-", sub: "_" },
+    { code: "Equal", label: "=", sub: "+" },
+    { code: "Backspace", label: "delete", icon: "Backspace", iconRight: true, size: 2, modifier: true },
+  ],
+  // QWERTY
+  [
+    { code: "Tab", label: "tab", icon: "Tab", size: 1.5, modifier: true },
+    { code: "KeyQ", label: "Q" },
+    { code: "KeyW", label: "W" },
+    { code: "KeyE", label: "E" },
+    { code: "KeyR", label: "R" },
+    { code: "KeyT", label: "T" },
+    { code: "KeyY", label: "Y" },
+    { code: "KeyU", label: "U" },
+    { code: "KeyI", label: "I" },
+    { code: "KeyO", label: "O" },
+    { code: "KeyP", label: "P" },
+    { code: "BracketLeft", label: "[", sub: "{" },
+    { code: "BracketRight", label: "]", sub: "}" },
+    { code: "Backslash", label: "\\", sub: "|", size: 1.5, modifier: true },
+  ],
+  // ASDF (search where caps would be)
+  [
+    { code: "Search", icon: "Search", size: 1.75, modifier: true, label: "" },
+    { code: "KeyA", label: "A" },
+    { code: "KeyS", label: "S" },
+    { code: "KeyD", label: "D" },
+    { code: "KeyF", label: "F" },
+    { code: "KeyG", label: "G" },
+    { code: "KeyH", label: "H" },
+    { code: "KeyJ", label: "J" },
+    { code: "KeyK", label: "K" },
+    { code: "KeyL", label: "L" },
+    { code: "Semicolon", label: ";", sub: ":" },
+    { code: "Quote", label: "'", sub: "\"" },
+    { code: "Enter", label: "enter", icon: "Enter", iconRight: true, size: 2.25, modifier: true },
+  ],
+  // ZXCV
+  [
+    { code: "ShiftLeft", label: "shift", icon: "Shift", size: 2.25, modifier: true },
+    { code: "KeyZ", label: "Z" },
+    { code: "KeyX", label: "X" },
+    { code: "KeyC", label: "C" },
+    { code: "KeyV", label: "V" },
+    { code: "KeyB", label: "B" },
+    { code: "KeyN", label: "N" },
+    { code: "KeyM", label: "M" },
+    { code: "Comma", label: ",", sub: "<" },
+    { code: "Period", label: ".", sub: ">" },
+    { code: "Slash", label: "/", sub: "?" },
+    { code: "ShiftRight", label: "shift", icon: "Shift", iconRight: true, size: 2.5, modifier: true },
+  ],
+  // Bottom row + arrows
+  [
+    { code: "ControlLeft", label: "ctrl", size: 1.5, modifier: true },
+    { code: "AltLeft", label: "alt", size: 1.25, modifier: true },
+    { code: "Space", label: "", size: 6.25 },
+    { code: "AltRight", label: "alt", size: 1.25, modifier: true },
+    { code: "ControlRight", label: "ctrl", size: 1.5, modifier: true },
+    { code: "ArrowLeft", icon: "ArrowLeft", modifier: true },
+    { code: "_ArrowStack", isStack: true }, // up/down stack
+    { code: "ArrowRight", icon: "ArrowRight", modifier: true },
+  ],
+];
+
+function Key({ keyDef, pressed, tested, onClick }) {
+  const cls = ["key"];
+  if (keyDef.fn) cls.push("fn");
+  if (keyDef.modifier) cls.push("modifier");
+  if (pressed) cls.push("pressed");
+  else if (tested) cls.push("tested");
+
+  const style = {};
+  if (keyDef.size) style.flex = keyDef.size;
+
+  const IconComp = keyDef.icon ? window.Icon[keyDef.icon] : null;
+
+  return (
+    <div
+      className={cls.join(" ")}
+      data-size={keyDef.size}
+      style={style}
+      onClick={() => onClick && onClick(keyDef.code)}
+    >
+      {keyDef.sub && <span className="sub">{keyDef.sub}</span>}
+      {IconComp && keyDef.label ? (
+        <span className="key-content">
+          {!keyDef.iconRight && <span className="icon"><IconComp /></span>}
+          <span className="glyph">{keyDef.label}</span>
+          {keyDef.iconRight && <span className="icon"><IconComp /></span>}
+        </span>
+      ) : IconComp ? (
+        <span className="icon"><IconComp /></span>
+      ) : (
+        <span className="glyph">{keyDef.label}</span>
+      )}
+    </div>
+  );
+}
+
+function Keyboard({ pressed, tested, onKeyClick }) {
+  return (
+    <div className="kb-stage">
+      <div className="kb">
+        {ROWS.map((row, ri) => (
+          <div className="kb-row" key={ri}>
+            {row.map((k) => {
+              if (k.isStack) {
+                // Up/Down stack — split into two half-height keys
+                return (
+                  <div key="stack" style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+                    <div
+                      className={[
+                        "key",
+                        "modifier",
+                        pressed.has("ArrowUp") ? "pressed" : "",
+                        tested.has("ArrowUp") ? "tested" : "",
+                      ].join(" ")}
+                      style={{ height: 25 }}
+                      onClick={() => onKeyClick("ArrowUp")}
+                    >
+                      <span className="icon"><window.Icon.ArrowUp /></span>
+                    </div>
+                    <div
+                      className={[
+                        "key",
+                        "modifier",
+                        pressed.has("ArrowDown") ? "pressed" : "",
+                        tested.has("ArrowDown") ? "tested" : "",
+                      ].join(" ")}
+                      style={{ height: 25 }}
+                      onClick={() => onKeyClick("ArrowDown")}
+                    >
+                      <span className="icon"><window.Icon.ArrowDown /></span>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <Key
+                  key={k.code}
+                  keyDef={k}
+                  pressed={pressed.has(k.code)}
+                  tested={tested.has(k.code)}
+                  onClick={onKeyClick}
+                />
+              );
+            })}
+          </div>
+        ))}
+        <div className="touchpad" />
+      </div>
+    </div>
+  );
+}
+
+// Total tested-able keys
+function allKeyCodes() {
+  const codes = [];
+  ROWS.forEach((row) => {
+    row.forEach((k) => {
+      if (k.isStack) {
+        codes.push("ArrowUp", "ArrowDown");
+      } else {
+        codes.push(k.code);
+      }
+    });
+  });
+  return codes;
+}
+
+window.Keyboard = Keyboard;
+window.allKeyCodes = allKeyCodes;
